@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "869603830916",
+    "project_id": "zenpilot-app",
+    "storage_bucket": "zenpilot-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:869603830916:android:f99a364f249b771667e6d1",
+        "android_client_info": {
+          "package_name": "com.zenpilot.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "869603830916-pj9iq6nqfdlo7oio8b5saq105qgd6j9v.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.zenpilot.app",
+            "certificate_hash": "690fae1e3144659092a891fff7034b9000ec0ebe"
+          }
+        },
+        {
+          "client_id": "869603830916-rhpr7q0pusoh54qm75pafs5n1dpie6pa.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAH9QRqSzIq150wYnDElv3blrDKUTJL92s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "869603830916-rhpr7q0pusoh54qm75pafs5n1dpie6pa.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
