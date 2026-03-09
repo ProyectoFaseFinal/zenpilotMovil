@@ -3,6 +3,7 @@ import 'package:zenpilot_app/styles/app_styles.dart';
 import 'package:zenpilot_app/widgets/shared_widgets.dart';
 import 'package:zenpilot_app/widgets/particle_background.dart';
 import 'package:zenpilot_app/services/auth_service.dart';
+import 'package:zenpilot_app/services/auth/auth_serviceLogin.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -15,6 +16,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _authService = AuthService();
+  final _authServiceLogin = AuthServiceLogin();
   bool _isLoading = false;
   bool _obscurePassword = true;
 
@@ -29,12 +31,54 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
     try {
-      await _authService.signInWithEmail(
-        _emailController.text.trim(),
-        _passwordController.text,
+      print('authServiceLogin: $_authServiceLogin');
+      final usuarios = await _authServiceLogin.obtenerUsuarios();
+      print("usuario: $usuarios");
+      final email = _emailController.text.trim();
+      final password = _passwordController.text;
+      print('Intentando iniciar sesión con email: $email y password: $password');
+      final userEncontrado = usuarios.firstWhere(
+        (user) => user['email'] == email && user['password'].toString() == password,
+        orElse: () => null,
       );
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/home');
+      print('Usuario encontrado: $userEncontrado');
+      if (userEncontrado != null) {
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/home');
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Error al iniciar sesión'),
+              backgroundColor: kErrorColor,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: const Color.fromARGB(255, 255, 196, 0),
+              margin: const EdgeInsets.all(16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              content: Row(
+                children: const [
+                  Icon(Icons.error_outline, color: Colors.white),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Email o contraseña incorrectos',
+                      style: TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -244,12 +288,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
     try {
-      await _authService.signUpWithEmail(
+      final success = await AuthServiceLogin().crearUsuario(
         _emailController.text.trim(),
         _passwordController.text,
+        _nameController.text.trim(),
       );
-      if (mounted) {
+      if (success && mounted) {
         Navigator.pushReplacementNamed(context, '/home');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_authService.getErrorMessage(e)),
+            backgroundColor: kErrorColor,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {

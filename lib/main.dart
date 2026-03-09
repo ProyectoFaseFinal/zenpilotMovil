@@ -8,6 +8,7 @@ import 'package:zenpilot_app/screens/device_screens.dart';
 import 'package:zenpilot_app/screens/secondary_screens.dart';
 import 'package:zenpilot_app/services/auth_service.dart';
 import 'package:zenpilot_app/firebase_options.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
   try {
@@ -32,7 +33,8 @@ void main() async {
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
     ]);
-
+    // correr el archivo .env
+    await dotenv.load(fileName: ".env");
     runApp(const ZenpilotApp());
   } catch (e, stackTrace) {
     print('Error durante la inicialización: $e');
