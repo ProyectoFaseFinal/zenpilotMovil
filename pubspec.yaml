@@ -28,6 +28,8 @@ dependencies:
   http: ^1.6.0
   avatar_glow: ^3.0.1
   flutter_dotenv: ^6.0.0
+  shared_preferences: ^2.5.4
+  fl_chart: ^1.1.1
 
 dev_dependencies:
   flutter_test:

@@ -4,6 +4,7 @@ import 'package:zenpilot_app/widgets/shared_widgets.dart';
 import 'package:zenpilot_app/widgets/particle_background.dart';
 import 'package:zenpilot_app/services/auth_service.dart';
 import 'package:zenpilot_app/services/auth/auth_serviceLogin.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -43,6 +44,13 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       print('Usuario encontrado: $userEncontrado');
       if (userEncontrado != null) {
+        // Guardar estado de sesión
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('isLoggedIn', true);
+        await prefs.setString('email', userEncontrado['email']);
+        await prefs.setInt('userId', userEncontrado['id']);
+        print('Usuario guardado en SharedPreferences: ${prefs.getString('email')} con ID: ${prefs.getInt('userId')}');
+        print('esta loggeado el ususario ${prefs.getBool('isLoggedIn')}');
         if (mounted) {
           Navigator.pushReplacementNamed(context, '/home');
         } else {

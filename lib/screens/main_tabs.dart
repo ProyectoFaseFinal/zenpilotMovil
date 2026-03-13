@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import '../styles/app_styles.dart';
 import '../widgets/shared_widgets.dart';
 import '../widgets/fatigue_chart.dart';
+import '../services/smartwatch_service/smartwatch_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:async';
+import 'dart:math';
 
-// --- HOME CONTENT ---
+
+// ---------------- HOME CONTENT ----------------
 class HomeContent extends StatelessWidget {
   const HomeContent({super.key});
 
-  // Datos de ejemplo para la semana
   static const List<double> fatigueData = [25, 45, 60, 40, 55, 35, 30];
 
   @override
@@ -18,17 +22,10 @@ class HomeContent extends StatelessWidget {
           backgroundColor: kPrimaryColor,
           expandedHeight: 120,
           floating: true,
-          pinned: false,
           flexibleSpace: FlexibleSpaceBar(
             title: Text('Zenpilot', style: kH2Style.copyWith(color: Colors.white)),
             centerTitle: true,
           ),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-              onPressed: () => Navigator.pushNamed(context, '/notifications'),
-            ),
-          ],
         ),
         SliverPadding(
           padding: const EdgeInsets.all(16),
@@ -40,28 +37,8 @@ class HomeContent extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: kPrimaryColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(Icons.wb_sunny_outlined, color: kPrimaryColor, size: 28),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('¡Bienvenido!', style: kH2Style),
-                              Text('Tu jornada está en curso', style: kSmallBodyStyle),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+                    Text('¡Bienvenido!', style: kH2Style),
+                    Text('Tu jornada está en curso', style: kSmallBodyStyle),
                     const SizedBox(height: 20),
                     AnimatedButton(
                       text: 'Terminar jornada',
@@ -70,248 +47,445 @@ class HomeContent extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
-              Text('Monitoreo en Tiempo Real', style: kH3Style),
-              const SizedBox(height: 16),
-              GridView.count(
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                childAspectRatio: 1.1,
-                children: const [
-                  MetricCard(
-                    icon: Icons.favorite_outline,
-                    title: 'Frecuencia Cardiaca',
-                    value: '75 BPM',
-                    color: kErrorColor,
-                  ),
-                  MetricCard(
-                    icon: Icons.directions_car_outlined,
-                    title: 'Estabilidad',
-                    value: '85%',
-                    color: kWarningColor,
-                  ),
-                  MetricCard(
-                    icon: Icons.battery_charging_full_outlined,
-                    title: 'Batería',
-                    value: '90%',
-                    color: kSuccessColor,
-                  ),
-                  MetricCard(
-                    icon: Icons.cloud_outlined,
-                    title: 'Conexión',
-                    value: 'Activa',
-                    color: kPrimaryColor,
-                    hasNeonEffect: true,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              Text('Historial de Fatiga', style: kH3Style),
-              const SizedBox(height: 16),
-              NeonCard(
-                child: Column(
-                  children: [
-                    const FatigueChart(
-                      data: fatigueData,
-                      height: 200,
-                    ),
-                    const SizedBox(height: 16),
-                    TextButton.icon(
-                      onPressed: () {
-                        showModalBottomSheet(
-                          context: context,
-                          isScrollControlled: true,
-                          backgroundColor: Colors.transparent,
-                          builder: (context) => _buildHistoryModal(context),
-                        );
-                      },
-                      icon: const Icon(Icons.history, color: kPrimaryColor, size: 20),
-                      label: Text('Ver historial completo', style: kBodyBoldStyle.copyWith(color: kPrimaryColor)),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 80),
             ]),
           ),
         ),
       ],
     );
   }
+}
 
-  static Widget _buildHistoryModal(BuildContext context) {
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.7,
-      decoration: const BoxDecoration(
-        color: kBackgroundColor,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: Column(
-        children: [
-          Container(
-            margin: const EdgeInsets.only(top: 12),
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: kDividerColor,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(24),
-            child: Text('Historial Completo', style: kH2Style),
-          ),
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: 7,
-              itemBuilder: (context, index) {
-                final days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-                final values = fatigueData;
-                final color = values[index] > 50 ? kErrorColor : values[index] > 30 ? kWarningColor : kSuccessColor;
 
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: NeonCard(
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 50,
-                          height: 50,
-                          decoration: BoxDecoration(
-                            color: color.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Center(
-                            child: Text(
-                              '${values[index].toInt()}%',
-                              style: kBodyBoldStyle.copyWith(color: color),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(days[index], style: kBodyBoldStyle),
-                              Text(
-                                values[index] > 50 ? 'Fatiga alta' : values[index] > 30 ? 'Fatiga media' : 'Fatiga baja',
-                                style: kSmallBodyStyle.copyWith(color: color),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Icon(Icons.chevron_right, color: kTextSecondary),
-                      ],
-                    ),
+// ---------------- DEVICES CONTENT ----------------
+class DevicesContent extends StatefulWidget {
+  const DevicesContent({super.key});
+
+  @override
+  State<DevicesContent> createState() => _DevicesContentState();
+}
+
+class _DevicesContentState extends State<DevicesContent> {
+
+  final SmartwatchService _smartwatchService = SmartwatchService();
+
+  List<Map<String, dynamic>> smartwatches = [];
+  bool loading = true;
+
+  Timer? _timer;
+  final Random random = Random();
+
+  Map<int, List<double>> heartHistory = {};
+  Map<int, List<double>> speedHistory = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSmartwatches();
+
+    _timer = Timer.periodic(const Duration(seconds: 15), (timer) {
+      _simulateMetrics();
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadSmartwatches() async {
+
+    final prefs = await SharedPreferences.getInstance();
+    final idUser = prefs.getInt('userId');
+
+    final data = await _smartwatchService.getSmartwatch();
+
+    final userDevices = data.where((device) {
+      final deviceUserId = int.parse(device['iduser'].toString());
+      return deviceUserId == idUser;
+    }).map<Map<String,dynamic>>((device) => {
+      "id": device["id"],
+      "name": device["name"],
+      "frecuencia_cardiaca": device["frecuencia_cardiaca"],
+      "velocidad_promedio": device["velocidad_promedio"],
+      "iduser": device["iduser"]
+    }).toList();
+
+    for (var d in userDevices) {
+      heartHistory[d["id"]] = [d["frecuencia_cardiaca"].toDouble()];
+      speedHistory[d["id"]] = [d["velocidad_promedio"].toDouble()];
+    }
+
+    setState(() {
+      smartwatches = userDevices;
+      loading = false;
+    });
+  }
+
+
+  void _simulateMetrics() {
+
+    if (smartwatches.isEmpty) return;
+
+    setState(() {
+
+      for (var device in smartwatches) {
+
+        int frecuencia = device["frecuencia_cardiaca"];
+        int velocidad = device["velocidad_promedio"];
+
+        frecuencia += random.nextInt(11) - 5;
+        velocidad += random.nextInt(9) - 4;
+
+        frecuencia = frecuencia.clamp(50,120);
+        velocidad = velocidad.clamp(80,200);
+
+        device["frecuencia_cardiaca"] = frecuencia;
+        device["velocidad_promedio"] = velocidad;
+
+        heartHistory[device["id"]]!.add(frecuencia.toDouble());
+        speedHistory[device["id"]]!.add(velocidad.toDouble());
+
+        if (heartHistory[device["id"]]!.length > 20) {
+          heartHistory[device["id"]]!.removeAt(0);
+        }
+
+        if (speedHistory[device["id"]]!.length > 20) {
+          speedHistory[device["id"]]!.removeAt(0);
+        }
+
+      // Solo actualizando métricas
+      _smartwatchService.putSmartwatch(
+        id: device["id"],
+        frecuenciaCardiaca: frecuencia,
+        velocidadPromedio: velocidad,
+        name: device["name"],
+      );
+
+      }
+
+    });
+
+  }
+
+  Future<void> _editDevice(Map<String, dynamic> device) async {
+    final controller = TextEditingController(text: device["name"]);
+
+    final result = await showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Editar Smartwatch"),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            labelText: "Nombre del dispositivo",
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context), // cancelar
+            child: const Text("Cancelar"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final newName = controller.text.trim();
+              if (newName.isEmpty) return;
+
+              // Llamamos al servicio enviando solo el nombre
+              final success = await _smartwatchService.putSmartwatch(
+              id: device["id"],
+              name: newName,
+              // frecuenciaCardiaca y velocidadPromedio se mantienen iguales
+              frecuenciaCardiaca: device["frecuencia_cardiaca"],
+              velocidadPromedio: device["velocidad_promedio"],
+            );
+
+              if (success) {
+                setState(() {
+                  device["name"] = newName;
+                });
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("Smartwatch actualizado"),
+                    backgroundColor: Colors.green,
                   ),
                 );
-              },
-            ),
+
+                Navigator.pop(context); // cerramos el dialog
+              }
+            },
+            child: const Text("Guardar"),
           ),
         ],
       ),
     );
   }
-}
 
-// --- DEVICES CONTENT ---
-class DevicesContent extends StatelessWidget {
-  const DevicesContent({super.key});
+  Future<void> _deleteDevice(int id) async {
+
+    final confirm = await showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Eliminar dispositivo"),
+        content: const Text("¿Seguro que deseas eliminar este smartwatch?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context,false),
+            child: const Text("Cancelar"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context,true),
+            child: const Text("Eliminar", style: TextStyle(color: Colors.red)),
+          )
+        ],
+      ),
+    );
+
+    if(confirm != true) return;
+
+    final result = await _smartwatchService.deleteSmartwatch(id);
+
+    if(result){
+
+      setState(() {
+        smartwatches.removeWhere((d) => d["id"] == id);
+        heartHistory.remove(id);
+        speedHistory.remove(id);
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Smartwatch eliminado"),
+          backgroundColor: Color.fromARGB(255, 23, 172, 0),
+        ),
+      );
+
+    }
+
+  }
+
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       backgroundColor: kBackgroundColor,
+
       appBar: AppBar(
         backgroundColor: kPrimaryColor,
         title: Text('Mis Dispositivos', style: kH2Style.copyWith(color: Colors.white)),
-        automaticallyImplyLeading: false,
       ),
+
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.pushNamed(context, '/add_device'),
-        icon: const Icon(Icons.add, color: Colors.white),
-        label: Text('Agregar', style: kButtonTextStyle.copyWith(color: Colors.white)),
-        backgroundColor: kPrimaryColor,
+        onPressed: () async {
+          await Navigator.pushNamed(context, '/add_device');
+          _loadSmartwatches();
+        },
+        icon: const Icon(Icons.add),
+        label: const Text('Agregar'),
       ),
+
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
+
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+
           children: [
+
             Text('Dispositivos Vinculados', style: kH3Style),
+
             const SizedBox(height: 16),
-            _buildDeviceCard(
-              context,
-              'Smartwatch Monitor',
-              'Conectado • 80% batería',
-              Icons.watch_outlined,
-              kSuccessColor,
-            ),
-            const SizedBox(height: 12),
-            _buildDeviceCard(
-              context,
-              'Cubierta de Volante',
-              'Activo • 95% batería',
-              Icons.sensors_outlined,
-              kPrimaryColor,
-            ),
-            const SizedBox(height: 80),
+
+            if (loading)
+              const Center(child: CircularProgressIndicator())
+
+            else if (smartwatches.isEmpty)
+              const Text("No tienes dispositivos registrados")
+
+            else
+              Column(
+                children: smartwatches.map((device) {
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: _buildDeviceCard(device),
+                  );
+
+                }).toList(),
+              ),
+
           ],
         ),
       ),
     );
   }
 
-  Widget _buildDeviceCard(BuildContext context, String name, String status, IconData icon, Color color) {
+
+  Widget _buildDeviceCard(Map<String,dynamic> device) {
+
+    final name = device['name'];
+    final frecuencia = device['frecuencia_cardiaca'];
+    final velocidad = device['velocidad_promedio'];
+
+    final heartData = heartHistory[device["id"]]!;
+    final speedData = speedHistory[device["id"]]!;
+
     return NeonCard(
-      onTap: () => Navigator.pushNamed(context, '/device_detail', arguments: {'name': name}),
-      child: Row(
+
+      onTap: () {
+        Navigator.pushNamed(
+          context,
+          '/device_detail',
+          arguments: device,
+        );
+      },
+
+      child: Column(
+
+        crossAxisAlignment: CrossAxisAlignment.start,
+
         children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: color, size: 32),
+
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+
+              Row(
+                children: [
+                  const Icon(Icons.watch, color: kSuccessColor),
+                  const SizedBox(width: 10),
+                  Text(name, style: kBodyBoldStyle),
+                ],
+              ),
+              
+
+              Row(
+                children: [
+
+                  IconButton(
+                    icon: const Icon(Icons.edit, color: Colors.blue),
+                    onPressed: () {
+                      _editDevice(device);
+                    },
+                  ),
+
+                  IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    onPressed: () {
+                      _deleteDevice(device["id"]);
+                    },
+                  ),
+
+                ],
+              )
+
+            ],
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(name, style: kBodyBoldStyle),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: color,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(status, style: kSmallBodyStyle),
-                  ],
-                ),
-              ],
+
+          const SizedBox(height: 10),
+
+          Text("Frecuencia: $frecuencia BPM", style: kSmallBodyStyle),
+
+          SizedBox(
+            height: 50,
+            child: MiniChart(
+              data: heartData,
+              color: Colors.red,
             ),
           ),
-          const Icon(Icons.chevron_right, color: kTextSecondary),
+
+          const SizedBox(height: 8),
+
+          Text("Velocidad: $velocidad km/h", style: kSmallBodyStyle),
+
+          SizedBox(
+            height: 50,
+            child: MiniChart(
+              data: speedData,
+              color: Colors.blue,
+            ),
+          ),
+
         ],
       ),
     );
   }
+
 }
 
-// --- PROFILE PLACEHOLDER ---
+
+// ---------------- MINI CHART ----------------
+class MiniChart extends StatelessWidget {
+
+  final List<double> data;
+  final Color color;
+
+  const MiniChart({
+    super.key,
+    required this.data,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: ChartPainter(data, color),
+      size: Size.infinite,
+    );
+  }
+
+}
+
+class ChartPainter extends CustomPainter {
+
+  final List<double> data;
+  final Color color;
+
+  ChartPainter(this.data,this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke;
+
+    final path = Path();
+
+    double dx = size.width / (data.length - 1);
+
+    double minVal = data.reduce(min);
+    double maxVal = data.reduce(max);
+
+    for (int i = 0; i < data.length; i++) {
+
+      double normalized = (data[i] - minVal) / (maxVal - minVal + 1);
+
+      double x = i * dx;
+      double y = size.height - (normalized * size.height);
+
+      if (i == 0) {
+        path.moveTo(x,y);
+      } else {
+        path.lineTo(x,y);
+      }
+
+    }
+
+    canvas.drawPath(path, paint);
+
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+
+}
+
+
+// ---------------- PROFILE ----------------
 class ProfileContentPlaceholder extends StatelessWidget {
   const ProfileContentPlaceholder({super.key});
 
@@ -323,7 +497,8 @@ class ProfileContentPlaceholder extends StatelessWidget {
   }
 }
 
-// --- HOME SCREEN ---
+
+// ---------------- HOME SCREEN ----------------
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -332,6 +507,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+
   int _currentIndex = 0;
 
   final List<Widget> _screens = const [
@@ -342,19 +518,24 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
+
       body: IndexedStack(
         index: _currentIndex,
         children: _screens,
       ),
+
       bottomNavigationBar: CustomBottomNavBar(
         currentIndex: _currentIndex,
         onTap: (index) {
+
           if (index == 2) {
             Navigator.pushNamed(context, '/profile_menu');
           } else {
             setState(() => _currentIndex = index);
           }
+
         },
       ),
     );

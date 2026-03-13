@@ -1,10 +1,94 @@
 import 'package:flutter/material.dart';
 import '../styles/app_styles.dart';
 import '../widgets/shared_widgets.dart';
+import '../services/smartwatch_service/smartwatch_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // --- AGREGAR DISPOSITIVO ---
 class AddDeviceScreen extends StatelessWidget {
   const AddDeviceScreen({super.key});
+
+  Future<void> _mostrarModalNombreSmartwatch(BuildContext context) async {
+    final parentContext = context;
+    final TextEditingController nameController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Nombre del Smartwatch'),
+          content: TextField(
+            controller: nameController,
+            decoration: const InputDecoration(
+              hintText: 'Ej: Apple Watch, Huawei Watch...',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              child: const Text('Cancelar'),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+            ),
+            ElevatedButton(
+              child: const Text('Guardar'),
+              onPressed: () {
+                final name = nameController.text.trim();
+
+                if (name.isNotEmpty) {
+                  Navigator.pop(context);
+                  _guardarSmartwacht(parentContext, name);
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+  
+  Future<void> _guardarSmartwacht(BuildContext context, String name) async {
+    final prefs = await SharedPreferences.getInstance();
+    final idUser = prefs.getInt('userId') ?? 0;
+    print("id usuario prefs: $idUser");
+
+    final int frecuenciaCardiaca = 47;
+    final int velocidadPromedio = 110;
+
+    final objeto = {
+      'idUser': idUser,
+      'frecuencia_cardiaca': frecuenciaCardiaca,
+      'velocidad_promedio': velocidadPromedio,
+      'name': name
+    };
+
+    print(objeto);
+
+    final result = await SmartwatchService().postSmartwatch(
+      idUser,
+      frecuenciaCardiaca,
+      velocidadPromedio,
+      name,
+    );
+
+    if (result) {
+      print('Smartwatch guardado exitosamente');
+        ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Smartwatch guardado exitosamente'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+    } else {
+      print('Error al guardar el smartwatch');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,22 +115,6 @@ class AddDeviceScreen extends StatelessWidget {
               'Monitoreo de ritmo cardiaco y fatiga',
               kPrimaryColor,
             ),
-            const SizedBox(height: 12),
-            _buildDeviceOption(
-              context,
-              Icons.sensors_outlined,
-              'Cubierta de Volante',
-              'Estabilidad y control de agarre',
-              kWarningColor,
-            ),
-            const SizedBox(height: 12),
-            _buildDeviceOption(
-              context,
-              Icons.settings_input_hdmi_outlined,
-              'Sensor Genérico',
-              'Dispositivos IoT compatibles',
-              kTextSecondary,
-            ),
           ],
         ),
       ),
@@ -56,12 +124,7 @@ class AddDeviceScreen extends StatelessWidget {
   Widget _buildDeviceOption(BuildContext context, IconData icon, String title, String subtitle, Color color) {
     return NeonCard(
       onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Iniciando emparejamiento con $title...'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        _mostrarModalNombreSmartwatch(context);
       },
       child: Row(
         children: [
@@ -97,8 +160,12 @@ class DeviceDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
     final args = ModalRoute.of(context)?.settings.arguments as Map?;
+
     final deviceName = args?['name'] ?? 'Dispositivo';
+    final frecuencia = args?['frecuencia_cardiaca'] ?? 0;
+    final velocidad = args?['velocidad_promedio'] ?? 0;
 
     return Scaffold(
       appBar: AppBar(
@@ -115,30 +182,62 @@ class DeviceDetailScreen extends StatelessWidget {
           ),
         ],
       ),
+
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
+
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+
             NeonCard(
               hasNeonEffect: true,
               neonColor: kSuccessColor,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _buildStatusItem('Conexión', 'Conectado', kSuccessColor, Icons.check_circle_outline),
+                  _buildStatusItem(
+                    'Conexión',
+                    'Conectado',
+                    kSuccessColor,
+                    Icons.check_circle_outline,
+                  ),
+
                   Container(width: 1, height: 40, color: kDividerColor),
-                  _buildStatusItem('Batería', '80%', kPrimaryColor, Icons.battery_charging_full_outlined),
+
+                  _buildStatusItem(
+                    'Batería',
+                    '80%',
+                    kPrimaryColor,
+                    Icons.battery_charging_full_outlined,
+                  ),
                 ],
               ),
             ),
+
             const SizedBox(height: 24),
+
             Text('Métricas Recientes', style: kH3Style),
+
             const SizedBox(height: 16),
-            _buildMetricTile(Icons.speed_outlined, 'Velocidad Promedio', '70 km/h', kPrimaryColor),
-            _buildMetricTile(Icons.favorite_outline, 'Ritmo Cardiaco', '75 BPM', kErrorColor),
-            _buildMetricTile(Icons.access_time_outlined, 'Tiempo de Uso', '4h 15min', kTextSecondary),
+
+            // 👇 AHORA USA LOS DATOS DEL SMARTWATCH
+            _buildMetricTile(
+              Icons.speed_outlined,
+              'Velocidad Promedio',
+              '$velocidad km/h',
+              kPrimaryColor,
+            ),
+
+            _buildMetricTile(
+              Icons.favorite_outline,
+              'Ritmo Cardiaco',
+              '$frecuencia BPM',
+              kErrorColor,
+            ),
+
             const SizedBox(height: 32),
+
             AnimatedButton(
               text: 'Desvincular dispositivo',
               onPressed: () {},
